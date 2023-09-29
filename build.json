@@ -1,0 +1,54 @@
+{
+  "variables": {
+    "config_file": "vars/default.yml",
+    "tmp_dir": "/tmp"
+  },
+
+  "builders":[
+    {
+      "type": "docker",
+      "image": "python:3.8.2-alpine",
+      "commit": true
+    }
+  ],
+  "provisioners":[
+    {
+      "type": "shell",
+      "inline": [
+        "apk update",
+        "apk add ansible",
+	"apk add git"
+      ]
+    },
+    {
+      "type": "shell",
+      "inline": [
+        "mkdir -p {{user `tmp_dir`}}"
+      ]
+    }
+    ,
+    {
+      "type": "file",
+      "source": "{{user `config_file`}}",
+      "destination": "{{user `tmp_dir`}}/vars.yml"
+    }
+    ,
+    {
+      "type": "ansible-local",
+      "staging_directory": "{{user `tmp_dir`}}/ansible",
+      "playbook_file": "playbook.yml",
+      "extra_arguments": [ "--extra-vars \"tmp_dir={{user `tmp_dir`}} \"" ]
+    }
+
+  ],
+
+  "post-processors": [
+    [
+      {
+        "type": "docker-tag",
+        "repository": "aipu",
+        "tag": "1.0.1"
+      }
+    ]
+  ]
+}
